@@ -1,0 +1,113 @@
+{
+  "name": "Allegrow Email Status",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "documentId": {
+          "__rl": true,
+          "value": "1KDP5Ud6dwpse217x0mvFEDyKC4O-0gxEx0mx8dBhmfg",
+          "mode": "list",
+          "cachedResultName": "[Workflow] - Email verifiction"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1"
+        },
+        "event": "rowAdded",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTrigger",
+      "typeVersion": 1,
+      "position": [ -240, 0 ],
+      "id": "feac3633-c542-4bc1-bc7f-cc4be6a105e0",
+      "name": "Google Sheets Trigger",
+      "retryOnFail": true
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.allegrow.co/v1/email/validate",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "accept", "value": "application/json" },
+            { "name": "content-type", "value": "application/json" },
+            { "name": "x-api-key", "value": "[YOUR_ALLEGROW_API_KEY]" }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            { "name": "email", "value": "={{ $json.email }}" }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [ 400, 0 ],
+      "id": "77a5d898-c29d-4565-89b3-a112f4ca12cb",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "jsCode": "const rows = [];\n\nfor (const item of $input.all()) {\n  rows.push({\n    \"email\": item.json[\"Email\"]\n  });\n}\n\nreturn [\n  {\n    json: {\n      data: rows\n    }\n  }\n];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [ -16, 0 ],
+      "id": "5aef2232-35aa-4b0b-a301-74b70947a196",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "=https://api.hubapi.com/crm/v3/objects/contacts/{{ $json.email }}?idProperty=email\n",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "Bearer [YOUR_HUBSPOT_PRIVATE_APP_TOKEN]" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"properties\": {\n    \"allegrow_email_verification_status\": \"{{ $json.allegrowStatus }}\"\n  }\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [ 608, 0 ],
+      "id": "314383d6-4b14-485c-827e-b90b1fb65f91",
+      "name": "HTTP Request1"
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "data",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [ 192, 0 ],
+      "id": "bd9dba58-e9b0-4da8-b791-74355912d3f6",
+      "name": "Split Out"
+    }
+  ],
+  "connections": {
+    "Google Sheets Trigger": { "main": [[ { "node": "Code in JavaScript", "type": "main", "index": 0 } ]] },
+    "HTTP Request": { "main": [[ { "node": "HTTP Request1", "type": "main", "index": 0 } ]] },
+    "Code in JavaScript": { "main": [[ { "node": "Split Out", "type": "main", "index": 0 } ]] },
+    "Split Out": { "main": [[ { "node": "HTTP Request", "type": "main", "index": 0 } ]] }
+  },
+  "active": true,
+  "settings": { "executionOrder": "v1" }
+}
