@@ -1,0 +1,165 @@
+{
+  "name": "Content Distribution",
+  "nodes": [
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "92aba72f-f4d7-4a4a-9227-f93053249941",
+              "leftValue": "={{ $json.type }}",
+              "rightValue": "blog",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -384,
+        528
+      ],
+      "id": "7f857a71-071a-480d-81c7-542ad537af1c",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-5-mini",
+          "mode": "list",
+          "cachedResultName": "GPT-5-MINI"
+        },
+        "responses": {
+          "values": [
+            {
+              "role": "system",
+              "content": "You are an expert Content Marketer. Repurpose this core content into a high-quality, professional blog post format with optimized headings."
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.openAi",
+      "typeVersion": 1.4,
+      "position": [
+        160,
+        352
+      ],
+      "id": "4b857a71-071a-480d-81c7-542ad537af1d",
+      "name": "ChatGPT Blog"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-5-mini",
+          "mode": "list",
+          "cachedResultName": "GPT-5-MINI"
+        },
+        "responses": {
+          "values": [
+            {
+              "role": "system",
+              "content": "You are a Social Media Manager. Repurpose this core asset into a highly engaging social media post layout with appropriate line breaks and professional styling."
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.openAi",
+      "typeVersion": 1.4,
+      "position": [
+        160,
+        640
+      ],
+      "id": "5c857a71-071a-480d-81c7-542ad537af1e",
+      "name": "ChatGPT Social"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Automatically parses and attaches UTM campaign structures for Blogs\nconst input = $json;\nreturn {\n  json: {\n    ...input,\n    utm_source: 'internal',\n    utm_medium: 'blog',\n    utm_campaign: input.campaign_name || 'content_distribution_engine',\n    processed_at: new Date().toISOString()\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        384,
+        352
+      ],
+      "id": "6d857a71-071a-480d-81c7-542ad537af1f",
+      "name": "Parse UTM Blog"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Automatically parses and attaches UTM campaign structures for Social Media Channels\nconst input = $json;\nreturn {\n  json: {\n    ...input,\n    utm_source: 'linkedin_twitter',\n    utm_medium: 'social',\n    utm_campaign: input.campaign_name || 'content_distribution_engine',\n    processed_at: new Date().toISOString()\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        384,
+        640
+      ],
+      "id": "7e857a71-071a-480d-81c7-542ad537af20",
+      "name": "Parse UTM Social"
+    }
+  ],
+  "connections": {
+    "If": {
+      "main": [
+        [
+          {
+            "node": "ChatGPT Blog",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "ChatGPT Social",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ChatGPT Blog": {
+      "main": [
+        [
+          {
+            "node": "Parse UTM Blog",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ChatGPT Social": {
+      "main": [
+        [
+          {
+            "node": "Parse UTM Social",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  }
+}
