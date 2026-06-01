@@ -19,7 +19,7 @@ Because contact data matching can take time, the workflow utilizes a high-level 
 * **Google Sheets Sync Layer:** Used as a lightweight relational transaction log to tie async callbacks to original execution loops.
 
 ### 📸 Workflow Canvas
-![Workflow Screenshot](./screenshot.png)
+![Workflow Screenshot](./Screenshot.png)
 
 ### 🚀 How to Replicate
 1. Download the clean `workflow.json` from this directory.
