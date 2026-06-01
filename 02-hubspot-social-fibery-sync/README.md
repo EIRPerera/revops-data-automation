@@ -21,7 +21,7 @@ Instead of making individual API calls for every single social media post—whic
 * **HTTP Request Nodes:** Rest API integrations using custom Bearer Authorization headers for HubSpot and Fibery.
 
 ### 📸 Workflow Canvas
-![Workflow Screenshot](./screenshot.png)
+![Workflow Screenshot](./Screenshot.png)
 
 ### 🚀 How to Replicate
 1. Download the `workflow.json` from this directory.
