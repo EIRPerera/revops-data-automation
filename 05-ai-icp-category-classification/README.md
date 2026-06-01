@@ -20,7 +20,7 @@ This workflow automates the **ICP Classification** of HubSpot companies using a 
 * **Split in Batches Node:** Throttles API requests to prevent rate limiting (25 records per batch).
 
 ### 📸 Workflow Canvas
-![Workflow Screenshot](./screenshot.png)
+![Workflow Screenshot](./Screenshot.png)
 
 ### 🚀 How to Replicate
 1. Download the `workflow.json` from this folder.
