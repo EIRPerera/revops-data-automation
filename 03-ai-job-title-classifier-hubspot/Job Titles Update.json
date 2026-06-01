@@ -1,0 +1,269 @@
+{
+  "name": "Job Titles Update",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "documentId": {
+          "__rl": true,
+          "value": "1UQOdcgbBQDKCLsLOUt0E_rWNTMeEQ7oGd9_WNFwBOLo",
+          "mode": "list",
+          "cachedResultName": "Job Titles Update"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "title_update"
+        },
+        "event": "rowAdded",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTrigger",
+      "typeVersion": 1,
+      "position": [ -432, -32 ],
+      "id": "61b6f08b-c3be-4c18-b7aa-aa8de8f173ea",
+      "name": "Google Sheets Trigger",
+      "retryOnFail": true
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1UQOdcgbBQDKCLsLOUt0E_rWNTMeEQ7oGd9_WNFwBOLo",
+          "mode": "list",
+          "cachedResultName": "Job Titles Update"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 303202422,
+          "mode": "list",
+          "cachedResultName": "lookup_sheet"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "job_title",
+              "lookupValue": "={{ $json.job_title }}"
+            }
+          ]
+        },
+        "options": {
+          "returnFirstMatch": true
+        }
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [ -160, -160 ],
+      "id": "4ccd4495-4455-4776-8244-9d18cd201320",
+      "name": "Get row(s) in sheet"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1UQOdcgbBQDKCLsLOUt0E_rWNTMeEQ7oGd9_WNFwBOLo",
+          "mode": "list",
+          "cachedResultName": "Job Titles Update"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 984033452,
+          "mode": "list",
+          "cachedResultName": "update"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "contact_id": "={{ $json.contact_id }}",
+            "job_title": "={{ $json.job_title }}",
+            "changed_date": "={{ $json.changed_date }}"
+          }
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [ -128, 128 ],
+      "id": "1f349afb-9fbd-4cf5-b6cf-4e1e886739cf",
+      "name": "Append row in sheet"
+    },
+    {
+      "parameters": {
+        "operation": "clear",
+        "documentId": {
+          "__rl": true,
+          "value": "1UQOdcgbBQDKCLsLOUt0E_rWNTMeEQ7oGd9_WNFwBOLo",
+          "mode": "list",
+          "cachedResultName": "Job Titles Update"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 984033452,
+          "mode": "list",
+          "cachedResultName": "update"
+        },
+        "keepFirstRow": true
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [ -272, 128 ],
+      "id": "cb0da029-1389-49a4-982f-cf9bcb200c2c",
+      "name": "Clear sheet"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "fieldsToMatchString": "=job_title",
+        "joinMode": "keepEverything",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [ 144, -16 ],
+      "id": "8b72981c-1975-4bfe-9a6d-43059474ee29",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "9a249a62-5388-406d-8bda-7da1e2de2cb4",
+              "leftValue": "={{ $json.job_seniority }}",
+              "operator": {
+                "type": "string",
+                "operation": "empty",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "d252259f-5c0f-4926-9ac6-af03dc84daaf",
+              "leftValue": "={{ $json.job_function }}",
+              "operator": {
+                "type": "string",
+                "operation": "empty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [ 400, -96 ],
+      "id": "612dfc98-0b26-4c16-828c-8622f0a3e849",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "=https://api.hubapi.com/crm/v3/objects/contacts/{{ $json.contact_id }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "Bearer [YOUR_HUBSPOT_TOKEN]" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"properties\": {\n      \"job_function2\": \"{{ $json.job_function }}\",\n      \"seniority_new\":\"{{ $json.job_seniority }}\"\n  }\n}",
+        "options": {
+          "batching": {
+            "batch": {
+              "batchSize": 1,
+              "batchInterval": 2000
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [ 608, 0 ],
+      "id": "2919ea4e-a555-4ef1-a1d5-26536b6b84ee",
+      "name": "HTTP Request",
+      "retryOnFail": true
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list"
+        },
+        "responses": {
+          "values": [
+            {
+              "content": "=You are a job title classification system.\nYour task is to classify a job title into:\n1. Job Seniority\n2. Job Function\nYou MUST use ONLY the values listed below.\nJob Seniority options:\n- Vice President (VP)\n- Director\n- Manager\n- Senior\n- Chief X Officer (CxO)\n- Owner\n- Partner\n- Training\n- Entry-level\n- Unpaid\nJob Function options:\n- Marketing / General\n- Marketing / Demand\n- Marketing / Other\n- RevOps\n- Sales\n- CEO\n- Finance\n- IT\n- Other top management\n- Other\nRules:\n- Return ONLY valid JSON\n- No explanations\n- No extra fields\n- Pick the closest reasonable match\nInput:\nJob Title: {{ $json.job_title }}\nOutput format:\n{\n\"contact_id\": {{ $json.contact_id }},\n  \"job_seniority\": \"\",\n  \"job_function\": \"\"\n}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2.1,
+      "position": [ 608, -240 ],
+      "id": "f5899186-2de7-44c8-8168-e6076df6c8b8",
+      "name": "Message a model"
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nconst results = [];\nfor (const item of items) {\n  try {\n    const rawText = item.json.output[0].content[0].text;\n    const parsedData = JSON.parse(rawText);\n    results.push({\n      json: {\n        contact_id: parsedData.contact_id,\n        job_function: parsedData.job_function,\n        job_seniority: parsedData.job_seniority\n      }\n    });\n  } catch (error) {\n    results.push({ json: { error: \"Could not parse text field\", details: error.message } });\n  }\n}\nreturn results;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [ 960, -240 ],
+      "id": "3452285c-e3f7-464e-8fd4-2faaf6e5e899",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "=https://api.hubapi.com/crm/v3/objects/contacts/{{ $json.contact_id }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "Bearer [YOUR_HUBSPOT_TOKEN]" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"properties\": {\n      \"job_function2\": \"{{ $json.job_function }}\",\n      \"seniority_new\":\"{{ $json.job_seniority }}\"\n  }\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [ 1184, -256 ],
+      "id": "6a5f5cf4-6ad1-44a1-8ea4-3954fca149ab",
+      "name": "HTTP Request1"
+    }
+  ],
+  "connections": {
+    "Google Sheets Trigger": { "main": [[ { "node": "Get row(s) in sheet", "type": "main", "index": 0 } ]] },
+    "Get row(s) in sheet": { "main": [[ { "node": "Merge", "type": "main", "index": 0 } ]] },
+    "Merge": { "main": [[ { "node": "If", "type": "main", "index": 0 } ]] },
+    "If": { "main": [
+      [ { "node": "Message a model", "type": "main", "index": 0 } ],
+      [ { "node": "HTTP Request", "type": "main", "index": 0 } ]
+    ]},
+    "Message a model": { "main": [[ { "node": "Code in JavaScript", "type": "main", "index": 0 } ]] },
+    "Code in JavaScript": { "main": [[ { "node": "HTTP Request1", "type": "main", "index": 0 } ]] }
+  },
+  "active": true,
+  "settings": { "executionOrder": "v1" }
+}
