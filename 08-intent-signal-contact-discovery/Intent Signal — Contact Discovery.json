@@ -1,0 +1,26 @@
+{
+  "name": "Intent Signal — Contact Discovery",
+  "nodes": [
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// Scores and ranks Apollo results by seniority and demand gen relevance.\n// Returns top N contacts per account.\n\nconst apolloResponse = $json;\nconst company = $('Code in JavaScript').first()?.json || {};\nconst config = { contactsPerAccount: 10 };\n\nconst people = Array.isArray(apolloResponse.people) ? apolloResponse.people : [];\n\nif (people.length === 0) {\n  return {\n    json: {\n      ...company,\n      contactCount: 0,\n      topContactIds: [],\n      rankedContacts: []\n    }\n  };\n}\n\nfunction scoreContact(person) {\n  let score = 0;\n  const title = (person.title || '').toLowerCase();\n  const seniority = (person.seniority || '').toLowerCase();\n\n  // Seniority tier\n  if (seniority === 'c_suite' || title.includes('cmo') || title.includes('chief marketing officer')) {\n    score += 40;\n  } else if (seniority === 'vp' || title.includes('vp ') || title.includes('vice president')) {\n    score += 30;\n  } else if (seniority === 'director' || title.includes('director')) {\n    score += 20;\n  } else {\n    score += 10;\n  }\n\n  // Demand gen / ABM bonus\n  if (\n    title.includes('demand gen') ||\n    title.includes('abm') ||\n    title.includes('account based') ||\n    title.includes('demand generation')\n  ) {\n    score += 15;\n  }\n\n  return score;\n}\n\nconst ranked = people\n  .map(p => ({\n    id: p.id,\n    firstName: p.first_name,\n    lastName: p.last_name,\n    title: p.title,\n    email: p.email,\n    seniority: p.seniority,\n    linkedinUrl: p.linkedin_url,\n    _score: scoreContact(p)\n  }))\n  .sort((a, b) => b._score - a._score);\n\nconst topContacts = ranked.slice(0, config.contactsPerAccount);\n\nreturn {\n  json: {\n    ...company,\n    contactCount: people.length,\n    topContactIds: topContacts.map(c => c.id),\n    rankedContacts: topContacts\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        380,
+        240
+      ],
+      "id": "f5f0b5d5-91db-495c-9c76-bc3f99e84b6f",
+      "name": "Filter and Rank Contacts"
+    }
+  ],
+  "connections": {},
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "timeSavedMode": "fixed"
+  }
+}
