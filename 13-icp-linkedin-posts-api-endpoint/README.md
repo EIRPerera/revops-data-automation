@@ -16,7 +16,7 @@ This workflow provides a lightweight, highly responsive **Custom API Endpoint** 
 * **Respond to Webhook Node:** Ensures the workflow acts as a true synchronous API, returning the fetched data payload natively.
 
 ### 📸 Workflow Canvas
-![Workflow Screenshot](./screenshot.png)
+![Workflow Screenshot](./Screenshot.png)
 
 ### 🚀 How to Replicate
 1. Download the `workflow.json` file inside this folder.
