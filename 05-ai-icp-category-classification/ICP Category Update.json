@@ -1,0 +1,236 @@
+{
+  "name": "ICP Category Update",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "documentId": {
+          "__rl": true,
+          "value": "1hX1eTqrVoDaw5hpowKg2ynJ7PQwWU3nUKP1L7SMd6fw",
+          "mode": "list",
+          "cachedResultName": "ICP Industry Update"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "update"
+        },
+        "event": "rowAdded",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTrigger",
+      "typeVersion": 1,
+      "position": [ -656, -192 ],
+      "id": "cba57019-4d85-46f7-8665-0f58a4ee4da1",
+      "name": "Google Sheets Trigger"
+    },
+    {
+      "parameters": {
+        "jsCode": "// ============================================================\n// ICP CLASSIFICATION CODE NODE (Hardcoded Lists)\n// Matches Python notebook logic exactly\n// ============================================================\n\nconst red_flag_industries = new Set([\n  \"Home Improvement\", \"Home Renovation\", \"Adult\", \"Adventure Travel\", \"American Football\"\n]);\n\nconst score_negative_industries = new Set([\n  \"Food and Beverage\", \"Real Estate\", \"Mobile\", \"Subscription Service\", \"Video on Demand\"\n]);\n\nconst score_non_tech_industries = new Set([\n  \"Consulting\", \"Customer Service\", \"Security\", \"Archiving Service\", \"Commercial\"\n]);\n\nconst score_tech_industries = new Set([\n  \"Ediscovery\", \"Information Services\", \"Professional Services\", \"SEO\", \"Technical Support\"\n]);\n\nfunction determine_status(industries_str) {\n  if (typeof industries_str !== \"string\" || industries_str.trim() === \"\") return \"Irrelevant\";\n  const industries = industries_str.split(\",\").map(i => i.trim());\n  for (const ind of industries) {\n    if (red_flag_industries.has(ind)) return \"Irrelevant\";\n  }\n  let score = 0, tech_count = 0, non_tech_count = 0;\n  for (const ind of industries) {\n    if (score_negative_industries.has(ind)) score -= 1;\n    if (score_non_tech_industries.has(ind)) { score += 1; non_tech_count += 1; }\n    if (score_tech_industries.has(ind))     { score += 1; tech_count += 1; }\n  }\n  if (score < 0) return \"Irrelevant\";\n  if (score === 0 && tech_count === 0 && non_tech_count === 0) return \"Irrelevant\";\n  if (tech_count > non_tech_count) return \"Tech\";\n  if (non_tech_count > tech_count) return \"Non-Tech\";\n  return \"Tech\";\n}\n\nconst companies = $input.all();\nreturn companies.map(item => {\n  const industriesStr = item.json.cb_industries;\n  const companyIdRaw  = item.json.company_id;\n  return {\n    json: {\n      company_id: companyIdRaw != null ? parseInt(companyIdRaw, 10) : null,\n      cb_industries: industriesStr,\n      industry_status: determine_status(industriesStr)\n    },\n  };\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [ -416, -192 ],
+      "id": "2f9f3911-757f-4c1f-9e2b-8549fbbc8163",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "=https://api.hubapi.com/crm/v3/objects/companies/{{ $json.company_id }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "Bearer [YOUR_HUBSPOT_TOKEN]" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"properties\": {\n    \"icp_category\": \"{{ $json.industry_status }}\",\n    \"icp_category_last_updated_date\": \"{{ new Date().toISOString().split('T')[0] }}\",\n    \"icp_category_last_updated_source\": \"Bot\"\n  }\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [ 1648, 240 ],
+      "id": "2f2da440-6d61-4a16-a140-26e0e3415d1f",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "7d307209-494b-453d-a94e-84ac928fc1e7",
+              "leftValue": "={{ $json.industry_status }}",
+              "rightValue": "Irrelevant",
+              "operator": { "type": "string", "operation": "equals" }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [ 192, -160 ],
+      "id": "8caa5aab-5f4c-40e0-9c51-e5d51176dc6d",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "url": "=https://api.hubapi.com/crm/v3/objects/companies/{{ $json.company_id }}?properties=name,domain,description,industry",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "Bearer [YOUR_HUBSPOT_TOKEN]" }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [ 704, -64 ],
+      "id": "2c4fdc39-2a1f-4a4a-b6f9-60cced734be0",
+      "name": "HTTP Request1"
+    },
+    {
+      "parameters": {
+        "url": "=https://{{ $json.properties.domain }}",
+        "options": {
+          "redirect": { "redirect": {} },
+          "timeout": 10000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [ 864, -224 ],
+      "id": "0e54588a-40f4-4c64-b8e1-a0d46afa971d",
+      "name": "HTTP Request2",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list"
+        },
+        "responses": {
+          "values": [
+            {
+              "role": "system",
+              "content": "You are a B2B company classifier. Analyze the company info and website content provided. Respond ONLY with valid JSON: {\\\"is_b2b\\\": true/false, \\\"confidence\\\": \\\"high\\\"/\\\"medium\\\"/\\\"low\\\", \\\"reasoning\\\": \\\"brief explanation\\\", \\\"suggested_industry\\\": \\\"most accurate industry if different from original\\}"
+            },
+            {
+              "content": "=Company: {{ $('HTTP Request1').item.json.properties.name }}\\nIndustry: {{ $('HTTP Request1').item.json.properties.industry }}\\nDescription: {{ $('HTTP Request1').item.json.properties.description }}\\nDomain: {{ $('HTTP Request1').item.json.properties.domain }}\\n\\nWebsite content (first 3000 chars):\\n{{ $json.clean_content }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2.1,
+      "position": [ 1408, -256 ],
+      "id": "08916131-de8e-4b85-81d4-3b1c8f72c0da",
+      "name": "Message a model"
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nconst results = [];\nfor (const item of items) {\n  const companyId = $('Loop Over Items').item?.json?.company_id ?? item.json?.company_id;\n  let aiResult = { is_b2b: false, confidence: 'low', reasoning: 'Parse failed', suggested_industry: '' };\n  try {\n    const content = item.json.output?.[0]?.content?.[0]?.text || item.json.choices?.[0]?.message?.content || '{}';\n    aiResult = JSON.parse(content);\n  } catch (e) {\n    aiResult.reasoning = 'Failed to parse OpenAI response: ' + e.message;\n  }\n  let newScore = 'Irrelevant';\n  if (aiResult.is_b2b === true) {\n    if (aiResult.confidence === 'high' || aiResult.confidence === 'medium') {\n      const suggested = (aiResult.suggested_industry || '').toLowerCase();\n      if (suggested.includes('tech') || suggested.includes('software') || suggested.includes('saas') || suggested.includes('it')) {\n        newScore = 'Tech';\n      } else {\n        newScore = 'Non-Tech';\n      }\n    }\n  }\n  results.push({\n    json: {\n      company_id: companyId,\n      original_score: 'Irrelevant',\n      new_score: newScore,\n      is_b2b: aiResult.is_b2b,\n      confidence: aiResult.confidence,\n      reasoning: aiResult.reasoning,\n      suggested_industry: aiResult.suggested_industry || '',\n      was_rescored: newScore !== 'Irrelevant'\n    }\n  });\n}\nreturn results;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [ 1648, -16 ],
+      "id": "a3db1239-4544-4296-8c1f-2a84a411d2f6",
+      "name": "Code in JavaScript1"
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "=https://api.hubapi.com/crm/v3/objects/companies/{{ $json.company_id }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "Bearer [YOUR_HUBSPOT_TOKEN]" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"properties\": {\n    \"icp_category\": \"{{ $json.new_score }}\",\n    \"icp_category_last_updated_date\": \"{{ new Date().toISOString().split('T')[0] }}\",\n    \"icp_category_last_updated_source\": \"Bot\"\n  }\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [ 1968, -48 ],
+      "id": "70054eca-3620-4419-bfea-5dbd6a715cf1",
+      "name": "HTTP Request3"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [ 544, -224 ],
+      "id": "2b732482-d9b4-4536-b288-91bbea1ce27e",
+      "name": "Loop Over Items"
+    },
+    {
+      "parameters": {
+        "batchSize": 25
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [ 528, 240 ],
+      "id": "cd6b311e-36ff-4a87-839e-b0a65202907c",
+      "name": "Loop Over Items1"
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "company_id",
+        "include": "allOtherFields"
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [ -80, -192 ],
+      "id": "714678cf-63e1-4521-ae29-fae317c918cb",
+      "name": "Split Out"
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nreturn items.map(item => {\n  let html = item.json.data || '';\n  let clean = html\n    .replace(/<script[^>]*>[\\s\\S]*?<\\/script>/gi, '')\n    .replace(/<style[^>]*>[\\s\\S]*?<\\/style>/gi, '')\n    .replace(/<[^>]+>/g, ' ')\n    .replace(/\\s+/g, ' ')\n    .substring(0, 3000);\n  return {\n    json: {\n      ...item.json,\n      clean_content: clean\n    }\n  };\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [ 1248, -464 ],
+      "id": "c6f4edfb-07dd-4a1b-992d-f9f71ed6bf9a",
+      "name": "Code in JavaScript3"
+    }
+  ],
+  "connections": {
+    "Google Sheets Trigger": { "main": [[ { "node": "Code in JavaScript", "type": "main", "index": 0 } ]] },
+    "Code in JavaScript": { "main": [[ { "node": "Split Out", "type": "main", "index": 0 } ]] },
+    "Split Out": { "main": [[ { "node": "If", "type": "main", "index": 0 } ]] },
+    "If": { "main": [
+      [ { "node": "Loop Over Items", "type": "main", "index": 0 } ],
+      [ { "node": "Loop Over Items1", "type": "main", "index": 0 } ]
+    ]},
+    "Loop Over Items": { "main": [[], [ { "node": "HTTP Request1", "type": "main", "index": 0 } ]] },
+    "HTTP Request1": { "main": [[ { "node": "HTTP Request2", "type": "main", "index": 0 } ]] },
+    "HTTP Request2": { "main": [[ { "node": "Code in JavaScript3", "type": "main", "index": 0 } ]] },
+    "Code in JavaScript3": { "main": [[ { "node": "Message a model", "type": "main", "index": 0 } ]] },
+    "Message a model": { "main": [[ { "node": "Code in JavaScript1", "type": "main", "index": 0 } ]] },
+    "Code in JavaScript1": { "main": [[ { "node": "HTTP Request3", "type": "main", "index": 0 } ]] },
+    "Loop Over Items1": { "main": [[], [ { "node": "HTTP Request", "type": "main", "index": 0 } ]] }
+  },
+  "active": true,
+  "settings": { "executionOrder": "v1" }
+}
