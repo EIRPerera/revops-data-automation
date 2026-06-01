@@ -22,7 +22,7 @@ This workflow automates the entire prospect discovery and qualification process.
 * **Loop Over Items Nodes:** Iteratively pushes independent payload sequences into safe batch cycles without stacking instance memory.
 
 ### 📸 Workflow Canvas
-![Workflow Screenshot](./screenshot.png)
+![Workflow Screenshot](./Screenshot.png)
 
 ### 🚀 How to Replicate
 1. Download the `workflow.json` file inside this repository folder.
