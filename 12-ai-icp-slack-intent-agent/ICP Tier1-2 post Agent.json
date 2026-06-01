@@ -1,0 +1,180 @@
+{
+  "name": "ICP Tier1-2 post Agent",
+  "nodes": [
+    {
+      "parameters": {
+        "trigger": [
+          "any_event"
+        ],
+        "watchWorkspace": true,
+        "options": {
+          "resolveIds": false,
+          "userIds": []
+        }
+      },
+      "type": "n8n-nodes-base.slackTrigger",
+      "typeVersion": 1,
+      "position": [
+        -160,
+        -16
+      ],
+      "id": "2412b65c-2993-4fbd-bff4-238857e228ed",
+      "name": "Slack Trigger"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.text }}",
+        "options": {
+          "systemMessage": "You should assist in analyzing the data available. This data consists of posts created by ideal customer profile (ICP) personas and may be used for various purposes.\n\nEnsure a high level of accuracy in all responses. Always base your answers strictly on the data provided, and do not present any information without verifying it against the available records."
+        }
+      },
+      "type": "n8n-nodes-base.agent",
+      "typeVersion": 1.6,
+      "position": [
+        360,
+        -16
+      ],
+      "id": "7f13ab9a-9e8b-440d-8611-75bcd90caa70",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.1,
+      "position": [
+        360,
+        180
+      ],
+      "id": "3eb20bee-d813-4d64-8866-4d4fbe4678d2",
+      "name": "OpenAI Chat Model"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "a19657d0-a22d-492f-a860-47258c702005",
+              "leftValue": "={{ $json.text }}",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        48,
+        -16
+      ],
+      "id": "b81810f7-e598-4076-847e-23a8347b1ff4",
+      "name": "Filter"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Normalizes the AI Agent response for Slack writeback payload\nreturn [{\n  json: {\n    channel_id: $('Slack Trigger').first().json.channel,\n    thread_ts: $('Slack Trigger').first().json.ts,\n    ai_analysis: $json.output\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        580,
+        -16
+      ],
+      "id": "9713ab9a-9e8b-440d-8611-75bcd90caa62",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "channelId": "={{ $json.channel_id }}",
+        "text": "=[AI Analysis Insights]:\n\n{{ $json.ai_analysis }}",
+        "options": {
+          "appendAttribution": false,
+          "threadTs": "={{ $json.thread_ts }}"
+        }
+      },
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.2,
+      "position": [
+        780,
+        -16
+      ],
+      "id": "fa1b3802-5a55-4068-b9db-80b62ad070d9",
+      "name": "Send a message"
+    }
+  ],
+  "connections": {
+    "Slack Trigger": {
+      "main": [
+        [
+          {
+            "node": "Filter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  }
+}
