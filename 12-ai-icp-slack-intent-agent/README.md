@@ -21,7 +21,7 @@ This production-grade workflow builds an autonomous **Social Intent AI Agent** e
 * **JavaScript Field Normalization:** Formats internal payload tokens and isolates structural string arrays seamlessly.
 
 ### 📸 Workflow Canvas
-![Workflow Screenshot](./screenshot.png)
+![Workflow Screenshot](./Screenshot.png)
 
 ### 🚀 How to Replicate
 1. Download the `workflow.json` file inside this repository folder.
