@@ -19,7 +19,7 @@ This workflow automates the entire distribution lifecycle. Triggered by a conten
 * **JavaScript Analytics Nodes:** Sanitizes string text, creates fallback logic for tracking parameters, and outputs clean analytics structures.
 
 ### 📸 Workflow Canvas
-![Workflow Screenshot](./screenshot.png)
+![Workflow Screenshot](./Screenshot.png)
 
 ### 🚀 How to Replicate
 1. Download the `workflow.json` file from this directory.
