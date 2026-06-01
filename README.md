@@ -21,13 +21,13 @@ Below is the structured index of all 13 production workflows running inside this
 
 | ID | Automation Engine | Core Stack | Operational GTM Impact |
 | :--- | :--- | :--- | :--- |
-| **01** | [Inbound Pipeline Sync Engine](./01-inbound-pipeline-sync) | HubSpot, Google Sheets | Standardizes and backs up raw inbound customer data vectors. |
-| **02** | [Lead Routing & Assignment Matrix](./02-lead-routing-assignment) | HubSpot, Slack | Programmatically routes incoming accounts based on territory/ICP parameters. |
-| **03** | [Data Sanitation & Normalization](./03-data-sanitation-normalization) | JavaScript, CRM | Filters out empty fields, handles email fallbacks, and fixes syntax anomalies. |
-| **04** | [Automated Account Tiering Engine](./04-account-tiering-engine) | HubSpot, Data Engine | Scores accounts instantly against Ideal Customer Profile guidelines. |
-| **05** | [Bulk Data Ingestion Pipeline](./05-bulk-data-ingestion) | CSV Parser, n8n Loops | Safeguards instance memory while processing bulk prospect uploads seamlessly. |
-| **06** | [Transactional Notification Engine](./06-transactional-notifications) | Slack, Email Node | Dispatches contextual internal lifecycle alerts upon key account updates. |
-| **07** | [CRM Schema Synchronizer](./07-crm-schema-synchronizer) | Webhooks, REST API | Maintains real-time field alignment across multi-tool operational structures. |
+| **01** | [Inbound Pipeline Sync Engine](./01-allegrow-hubspot-email-verifier) | HubSpot, Google Sheets | Standardizes and backs up raw inbound customer data vectors. |
+| **02** | [Lead Routing & Assignment Matrix](./02-hubspot-social-fibery-sync) | HubSpot, Slack | Programmatically routes incoming accounts based on territory/ICP parameters. |
+| **03** | [Data Sanitation & Normalization](./03-ai-job-title-classifier-hubspot) | JavaScript, CRM | Filters out empty fields, handles email fallbacks, and fixes syntax anomalies. |
+| **04** | [Automated Account Tiering Engine](./04-async-apollo-hubspot-enrichment) | HubSpot, Data Engine | Scores accounts instantly against Ideal Customer Profile guidelines. |
+| **05** | [Bulk Data Ingestion Pipeline](./05-ai-icp-category-classification) | CSV Parser, n8n Loops | Safeguards instance memory while processing bulk prospect uploads seamlessly. |
+| **06** | [Transactional Notification Engine](./06-linkedin-slack-ai-engagement-agent) | Slack, Email Node | Dispatches contextual internal lifecycle alerts upon key account updates. |
+| **07** | [CRM Schema Synchronizer](./07-linkedin-ads-library-url-fixer) | Webhooks, REST API | Maintains real-time field alignment across multi-tool operational structures. |
 | **08** | [Intent Signal — Contact Discovery](./08-intent-signal-contact-discovery) | Apollo API, HubSpot, JS | Algorithmic scoring matrix that discovers and ranks Top 10 contacts per account. |
 | **09** | [Apollo Lead Contact Enricher](./09-apollo-lead-contact-enricher) | Apollo Match, HubSpot, Sheets | Resolves blank incoming lead properties using data-graphing enrichment layers. |
 | **10** | [AI Content Distribution Engine](./10-ai-content-distribution-engine) | OpenAI GPT, JavaScript, Loops | Repurposes long-form articles into cross-platform variants with dynamic UTM parsing. |
