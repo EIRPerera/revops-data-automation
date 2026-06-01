@@ -1,0 +1,99 @@
+{
+  "name": "Custom API - ICP LinkedIn Posts",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "query-linkedin-posts",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -32,
+        -224
+      ],
+      "id": "webhook-trigger-node",
+      "name": "Webhook"
+    },
+    {
+      "parameters": {
+        "url": "https://[YOUR_NOCODB_URL]/api/v1/db/data/noco/pwmsw3rd0ysflhr/mx4zpx5ndoph5l0",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "where",
+              "value": "={{ $json.body.where || '' }}"
+            },
+            {
+              "name": "limit",
+              "value": "50"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "xc-token",
+              "value": "[YOUR_NOCODB_TOKEN]"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        96,
+        -224
+      ],
+      "id": "db-query-node",
+      "name": "query_linkedin_posts_db"
+    },
+    {
+      "parameters": {
+        "respondWith": "allIncomingItems",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        224,
+        -224
+      ],
+      "id": "webhook-response-node",
+      "name": "Respond to Webhook"
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "query_linkedin_posts_db",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "query_linkedin_posts_db": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  }
+}
