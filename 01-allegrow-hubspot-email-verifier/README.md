@@ -17,7 +17,7 @@ In Revenue Operations (RevOps), maintaining clean data is critical for email del
 * **HTTP Request Nodes:** Core API integrations with Allegrow and HubSpot CRM Rest API (v3).
 
 ### 📸 Workflow Canvas
-![Workflow Screenshot](./screenshot.png)
+![Workflow Screenshot](./Screenshot.png)
 
 ### 🚀 How to Replicate
 1. Download the masked `workflow.json` from this folder.
