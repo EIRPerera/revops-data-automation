@@ -21,7 +21,7 @@ This workflow automates enterprise-level **inbound contact enrichment**. Trigger
 * **Advanced JavaScript Engineering:** Drives programmatic array mapping, empty parameter sanitization, and fallback orchestration.
 
 ### 📸 Workflow Canvas
-![Workflow Screenshot](./screenshot.png)
+![Workflow Screenshot](./Screenshot.png)
 
 ### 🚀 How to Replicate
 1. Download the `workflow.json` file inside this repository folder.
