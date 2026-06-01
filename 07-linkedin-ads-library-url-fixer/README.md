@@ -22,7 +22,7 @@ This workflow solves this challenge at scale. It acts as an enterprise-grade aut
 * **n8n Split in Batches Node:** Iterates over parsed elements systematically to drive continuous loop executions.
 
 ### 📸 Workflow Canvas
-![Workflow Screenshot](./screenshot.png)
+![Workflow Screenshot](./Screenshot.png)
 
 ### 🚀 How to Replicate
 1. Download the `workflow.json` file inside this repository folder.
