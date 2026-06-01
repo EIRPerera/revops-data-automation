@@ -20,7 +20,7 @@ This production-grade workflow automates enterprise account intelligence gatheri
 * **Slack Integration Node:** Standardizes internal communication flows by dispatching markdown-rich notification matrices.
 
 ### 📸 Workflow Canvas
-![Workflow Screenshot](./screenshot.png)
+![Workflow Screenshot](./Screenshot.png)
 
 ### 🚀 How to Replicate
 1. Download the `workflow.json` file in this directory.
