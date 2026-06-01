@@ -1,0 +1,407 @@
+{
+  "name": "Apollo Enricher",
+  "nodes": [
+    {
+      "parameters": {
+        "url": "=https://api.hubapi.com/crm/v4/objects/leads/{{ $json.body[0].objectId }}/associations/contacts",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer [YOUR_HUBSPOT_TOKEN]"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        416,
+        0
+      ],
+      "id": "102d82ba-09bb-4601-9fbd-fc46f79b095a",
+      "name": "Get associated contacts"
+    },
+    {
+      "parameters": {
+        "jsCode": "const leadId = $('Webhook').first().json.body[0].objectId;\n\nreturn $json.results.map(item => ({\n  json: {\n    lead_id: leadId,\n    hs_contact_id: item.toObjectId\n  }\n}));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        624,
+        0
+      ],
+      "id": "ddb20bee-d813-4d64-8866-4d4fbe4678d9",
+      "name": "Split Out Contact IDs"
+    },
+    {
+      "parameters": {
+        "url": "=https://api.hubapi.com/crm/v3/objects/contacts/{{ $json.hs_contact_id }}",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "properties",
+              "value": "firstname,lastname,email,city,country,linkedin_url,jobtitle,hs_email_domain"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer [YOUR_HUBSPOT_TOKEN]"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        800,
+        0
+      ],
+      "id": "6c3e572e-c62c-4bdf-a885-4638cfdd1d18",
+      "name": "Get contact details"
+    },
+    {
+      "parameters": {
+        "url": "https://api.apollo.io/api/v1/people/match",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "first_name",
+              "value": "={{ $('Get contact details').item.json.properties.firstname }}"
+            },
+            {
+              "name": "last_name",
+              "value": "={{ $('Get contact details').item.json.properties.lastname }}"
+            },
+            {
+              "name": "email",
+              "value": "={{ $('Get contact details').item.json.properties.email }}"
+            },
+            {
+              "name": "domain",
+              "value": "={{ $('Get contact details').item.json.properties.hs_email_domain }}"
+            },
+            {
+              "name": "reveal_personal_emails",
+              "value": "false"
+            },
+            {
+              "name": "reveal_phone_number",
+              "value": "false"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Api-Key",
+              "value": "[YOUR_APOLLO_API_KEY]"
+            },
+            {
+              "name": "Accept",
+              "value": "application/json"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Cache-Control",
+              "value": "no-cache"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1120,
+        0
+      ],
+      "id": "7eba515a-6676-4fe5-a6bb-c4e4a6b6fda6",
+      "name": "Apollo People Match enrichment"
+    },
+    {
+      "parameters": {
+        "jsCode": "const contact = $('Get contact details').item.json;\nconst props = contact.properties || {};\nconst person = $json.person || {};\nconst org = person.organization || {};\n\nfunction joinList(value) {\n  return Array.isArray(value) ? value.join(';') : value || '';\n}\n\nreturn [{\n  json: {\n    lead_id:$('Edit Fields').first().json.lead_id ,\n    hs_contact_id: contact.id,\n\n    first_name: person.first_name || props.firstname || '',\n    last_name: person.last_name || props.lastname || '',\n    domain: org.primary_domain || props.hs_email_domain || '',\n    email: person.email || props.email || '',\n    country: person.country || props.country || '',\n    city: person.city || props.city || '',\n    linkedin_url: person.linkedin_url || props.linkedin_url || '',\n    title: person.title || props.jobtitle || '',\n\n    email_status: person.email_status || '',\n    twitter_url: person.twitter_url || '',\n    github_url: person.github_url || '',\n    facebook_url: person.facebook_url || '',\n    extrapolated_email_confidence: person.extrapolated_email_confidence || '',\n    headline: person.headline || '',\n    street_address: person.street_address || person.address || '',\n    state: person.state || '',\n    postal_code: person.postal_code || '',\n    formatted_address: person.formatted_address || '',\n    time_zone: person.time_zone || '',\n\n    intent_strength: org.intent_strength || '',\n    show_intent: org.show_intent || '',\n    email_domain_catchall: org.email_domain_catchall || org.email_domain_catch_all || '',\n    revealed_for_current_team: person.revealed_for_current_team || '',\n\n    departments: joinList(person.departments),\n    subdepartments: joinList(person.subdepartments),\n    functions: joinList(person.functions),\n    seniority: person.seniority || ''\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1312,
+        0
+      ],
+      "id": "9713ab9a-9e8b-440d-8611-75bcd90caa69",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "c19657d0-a22d-492f-a860-47258c702006",
+              "name": "lead_id",
+              "value": "={{ $('Split Out Contact IDs').item.json.lead_id }}",
+              "type": "string"
+            },
+            {
+              "id": "20c942a5-2c54-4b5b-9dd4-29d666374461",
+              "name": "hs_contact_id",
+              "value": "={{ $('Split Out Contact IDs').item.json.hs_contact_id }}",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        960,
+        0
+      ],
+      "id": "b81810f7-e598-4076-847e-23a8347b1ff5",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "=https://api.hubapi.com/crm/v3/objects/contacts/{{$json.hs_contact_id}}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer [YOUR_HUBSPOT_TOKEN]"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"properties\": {\n    \"firstname\": \"{{ $json.first_name }}\",\n    \"lastname\": \"{{ $json.last_name }}\",\n    \"email\": \"{{ $json.email }}\",\n    \"linkedin_url\": \"{{ $json.linkedin_url }}\",\n    \"jobtitle\": \"{{ $json.title }}\",\n    \"state\": \"{{ $json.state }}\",\n    \"seniority\": \"{{ $json.seniority }}\"\n  }\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1712,
+        0
+      ],
+      "id": "fa1b3802-5a55-4068-b9db-80b62ad070d8",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1DWt_wheyCVXANj1iiwYbgJpEMJ5IyUCN3admj-hGCjc",
+          "mode": "list",
+          "cachedResultName": "Sales Leads enrichment [Automation]",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1DWt_wheyCVXANj1iiwYbgJpEMJ5IyUCN3admj-hGCjc/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1978998336,
+          "mode": "list",
+          "cachedResultName": "Sheet3",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1DWt_wheyCVXANj1iiwYbgJpEMJ5IyUCN3admj-hGCjc/edit#gid=1978998336"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "hs_contact_id": "={{ $json.hs_contact_id }}",
+            "first_name": "={{ $json.first_name }}",
+            "last_name": "={{ $json.last_name }}",
+            "domain": "={{ $json.domain }}",
+            "email": "={{ $json.email }}",
+            "country": "={{ $json.country }}",
+            "city": "={{ $json.city }}",
+            "linkedin_url": "={{ $json.linkedin_url }}",
+            "title": "={{ $json.title }}",
+            "email_status": "={{ $json.email_status }}",
+            "twitter_url": "={{ $json.twitter_url }}",
+            "github_url": "={{ $json.github_url }}",
+            "facebook_url": "={{ $json.facebook_url }}",
+            "headline": "={{ $json.headline }}",
+            "state": "={{ $json.state }}",
+            "seniority": "={{ $json.seniority }}",
+            "departments": "={{ $json.departments }}",
+            "Lead ID": "={{ $('Edit Fields').item.json.lead_id }}"
+          },
+          "matchingColumns": [
+            "Lead ID"
+          ],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1520,
+        0
+      ],
+      "id": "cddc7033-ff39-41b5-bae7-f56983cf21fe",
+      "name": "Append row in sheet"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "9920577a-d113-48d7-90c2-e9896ae01ba9",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -16,
+        16
+      ],
+      "id": "9560e7bd-1f28-477d-9edf-5ac69b5b966e",
+      "name": "Webhook",
+      "webhookId": "9920577a-d113-48d7-90c2-e9896ae01ba9"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        192,
+        16
+      ],
+      "id": "196bcc4a-9d94-4040-9150-4cc43e21143b",
+      "name": "Wait",
+      "webhookId": "57e368b5-a87f-4a9f-bf84-0c78b2ff1522"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Get associated contacts": {
+      "main": [
+        [
+          {
+            "node": "Split Out Contact IDs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Out Contact IDs": {
+      "main": [
+        [
+          {
+            "node": "Get contact details",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get contact details": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Apollo People Match enrichment": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Append row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Apollo People Match enrichment",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append row in sheet": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "Get associated contacts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  }
+}
