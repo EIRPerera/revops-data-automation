@@ -19,7 +19,7 @@ To prevent unnecessary LLM spending, the workflow applies a smart multi-tiered a
 * **HubSpot REST API Integration:** Real-time data enrichment executing granular contacts patching with built-in API rate limiting protection.
 
 ### 📸 Workflow Canvas
-![Workflow Screenshot](./screenshot.png)
+![Workflow Screenshot](./Screenshot.png)
 
 ### 🚀 How to Replicate
 1. Download the cleaned `workflow.json` from this folder.
