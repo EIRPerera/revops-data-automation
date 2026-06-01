@@ -1,0 +1,277 @@
+{
+  "name": "contact enrichment",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "documentId": {
+          "__rl": true,
+          "value": "1RJgKTQKZYmT6wvpmwnDl41Ir4lRr0uAr2XxqwC5t1ik",
+          "mode": "list",
+          "cachedResultName": "contact enrichment"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1"
+        },
+        "event": "rowAdded",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTrigger",
+      "typeVersion": 1,
+      "position": [ -176, -240 ],
+      "id": "328e04ea-e541-45de-b603-94f62932556b",
+      "name": "Google Sheets Trigger"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.apollo.io/api/v1/people/match",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "x-api-key", "value": "[YOUR_APOLLO_API_KEY]" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"email\": \"{{$node['HubSpot - Get'].json.properties.email}}\",\n  \"first_name\": \"{{$node['HubSpot - Get'].json.properties.firstname}}\",\n  \"last_name\": \"{{$node['HubSpot - Get'].json.properties.lastname}}\",\n  \"domain\": \"{{$node['HubSpot - Get'].json.properties.website}}\",\n  \"reveal_phone_number\": true,\n  \"webhook_url\": \"https://[YOUR_N8N_DOMAIN]/webhook/apollo-waterfall-phone\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [ 464, -256 ],
+      "id": "57b930c6-60e3-44e5-9b45-12e5130a79fe",
+      "name": "apollo"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "apollo-waterfall-phone",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [ 176, 176 ],
+      "id": "40a9afff-3fc0-4d34-905b-3d7b4ef9a18b",
+      "name": "Webhook"
+    },
+    {
+      "parameters": {
+        "url": "=https://api.hubapi.com/crm/v3/objects/contacts/{{ $json.hubspot_id }}?",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            { "name": "properties", "value": "email,firstname,lastname,company,jobtitle,phone,website,linkedin" }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "Bearer [YOUR_HUBSPOT_TOKEN]" }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [ 32, -240 ],
+      "id": "f57370e7-d455-46f1-8d9e-87e821a01048",
+      "name": "HubSpot - Get"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            { "id": "96b80ad8-2a7f-4e7c-a6da-242e6c5d632f", "name": "apollo_request_id", "value": "={{ $json.person.id }}", "type": "string" },
+            { "id": "8f9726c2-72a4-4e23-9a58-5fad63c18019", "name": "hubspot_contact_id", "value": "={{ $('Google Sheets Trigger').item.json.hubspot_id }}", "type": "string" }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [ 624, -256 ],
+      "id": "7769a8b4-2965-4b49-8a0b-edb6cbeeaa94",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1RJgKTQKZYmT6wvpmwnDl41Ir4lRr0uAr2XxqwC5t1ik",
+          "mode": "list",
+          "cachedResultName": "contact enrichment"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1"
+        },
+        "filtersUI": {
+          "values": [
+            { "lookupColumn": "hubspot_id", "lookupValue": "={{$node[\"Google Sheets Trigger\"].json.hubspot_id}}" }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [ 768, -256 ],
+      "id": "2a46f78a-84c8-4d75-975a-471a4402ba1b",
+      "name": "Get row(s) in sheet"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1RJgKTQKZYmT6wvpmwnDl41Ir4lRr0uAr2XxqwC5t1ik",
+          "mode": "list",
+          "cachedResultName": "contact enrichment"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "hubspot_id": "={{ $json.hubspot_id }}",
+            "apollo_request_id": "={{ $('Edit Fields').item.json.apollo_request_id }}"
+          },
+          "matchingColumns": [ "hubspot_id" ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [ 944, -256 ],
+      "id": "f759de94-28ff-455f-af04-c651c2563edb",
+      "name": "Update row in sheet"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            { "id": "8054e8fc-3891-46e8-bc3a-6bf4e8c5137c", "name": "apollo_person_id", "value": "={{$json.body.people[0].id}}", "type": "string" },
+            { "id": "be91f5d7-d7bb-448e-962c-ea003c002b97", "name": "enriched_phone", "value": "={{$json.body.people[0].phone_numbers[0].raw_number}}", "type": "string" }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [ 352, 176 ],
+      "id": "b0f8a42c-3a33-42c8-9286-125177c2476a",
+      "name": "Edit Fields1"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1RJgKTQKZYmT6wvpmwnDl41Ir4lRr0uAr2XxqwC5t1ik",
+          "mode": "list",
+          "cachedResultName": "contact enrichment"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1"
+        },
+        "filtersUI": {
+          "values": [
+            { "lookupColumn": "apollo_request_id", "lookupValue": "={{$json.apollo_person_id}}" }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [ 752, 176 ],
+      "id": "4d9a8133-2e67-48a6-93a0-312a639c1332",
+      "name": "Get row(s) in sheet1",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "=https://api.hubapi.com/crm/v3/objects/contacts/{{$node[\"Get row(s) in sheet1\"].json.hubspot_id}}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "Bearer [YOUR_HUBSPOT_TOKEN]" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"properties\": {\n    \"phone\": \"{{$node['Edit Fields1'].json.enriched_phone}}\"\n  }\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [ 944, 176 ],
+      "id": "018874c0-969a-479d-bc25-aa529805e2b7",
+      "name": "HTTP Request2"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [ 560, 176 ],
+      "id": "c20a0963-4569-44a8-ab7d-7a8f87410a4e",
+      "name": "Wait"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "622dbe9f-80bd-4ab7-b226-c155e1a98dee",
+              "leftValue": "={{ $json.properties.phone }}",
+              "operator": { "type": "string", "operation": "empty", "singleValue": true }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [ 240, -240 ],
+      "id": "e1608bae-3337-4205-82b8-b275101aebfe",
+      "name": "If"
+    }
+  ],
+  "connections": {
+    "Google Sheets Trigger": { "main": [[ { "node": "HubSpot - Get", "type": "main", "index": 0 } ]] },
+    "HubSpot - Get": { "main": [[ { "node": "If", "type": "main", "index": 0 } ]] },
+    "If": { "main": [[ { "node": "apollo", "type": "main", "index": 0 } ]] },
+    "apollo": { "main": [[ { "node": "Edit Fields", "type": "main", "index": 0 } ]] },
+    "Edit Fields": { "main": [[ { "node": "Get row(s) in sheet", "type": "main", "index": 0 } ]] },
+    "Get row(s) in sheet": { "main": [[ { "node": "Update row in sheet", "type": "main", "index": 0 } ]] },
+    "Webhook": { "main": [[ { "node": "Edit Fields1", "type": "main", "index": 0 } ]] },
+    "Edit Fields1": { "main": [[ { "node": "Wait", "type": "main", "index": 0 } ]] },
+    "Wait": { "main": [[ { "node": "Get row(s) in sheet1", "type": "main", "index": 0 } ]] },
+    "Get row(s) in sheet1": { "main": [[ { "node": "HTTP Request2", "type": "main", "index": 0 } ]] }
+  },
+  "active": true,
+  "settings": { "executionOrder": "v1" }
+}
