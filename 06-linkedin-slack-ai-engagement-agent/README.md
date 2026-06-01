@@ -22,7 +22,7 @@ This workflow builds an intelligent, context-aware **AI Assistant inside Slack**
 * **Memory Buffer Window Node:** Maintains a strict session-key structure using custom Slack channel IDs to support multi-user chat sessions.
 
 ### 📸 Workflow Canvas
-![Workflow Screenshot](./screenshot.png)
+![Workflow Screenshot](./Screenshot.png)
 
 ### 🚀 How to Replicate
 1. Download the `workflow.json` from this repository folder.
