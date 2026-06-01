@@ -1,0 +1,382 @@
+{
+  "name": "LinkedIn Ads Library URL Fixer (30k/day, 100 at a time)",
+  "nodes": [
+    {
+      "parameters": {
+        "jsCode": "const DAILY_LIMIT   = 3000; // change to 30000 for production\nconst CURRENT_MONTH = new Date().toISOString().slice(0, 7);\n\nconst sd = $getWorkflowStaticData('global');\nsd.run_started_at = new Date().toISOString();\nsd.current_month  = CURRENT_MONTH;\nsd.daily_limit    = DAILY_LIMIT;\nsd.processed      = 0;\n\nreturn [{ json: { current_month: CURRENT_MONTH, daily_limit: DAILY_LIMIT } }];"
+      },
+      "id": "acd6be56-2ebe-4810-8a1f-79554ef0b50f",
+      "name": "Initialize Daily Run",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -624,
+        80
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "68160a50-6155-48c2-9d18-63dee7606a98",
+      "name": "Inner Loop (per company)",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        -160,
+        80
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const url = $json.lemlistprofileurl || '';\nconst match = url.match(/linkedin\\.com\\/company\\/([^/?#]+)/i);\n\nlet vanity_name = null;\nif (match) {\n  try {\n    vanity_name = decodeURIComponent(match[1]).trim();\n  } catch (e) {\n    vanity_name = match[1].trim();\n  }\n}\n\nreturn {\n  json: {\n    ...$json,\n    vanity_name: vanity_name,\n    linkedin_last_checked: new Date().toISOString()\n  }\n};"
+      },
+      "id": "454e5aa9-5acc-4b35-83a3-08ca7aab730b",
+      "name": "Extract Vanity Name",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        64,
+        96
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "has-vanity",
+              "leftValue": "=={{ $json.vanity_name }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "78f8383a-c2b2-45ca-a33d-33cee19fc894",
+      "name": "IF Has Vanity Name?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        240,
+        96
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://api.linkedin.com/rest/organizations",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "vanityName",
+              "value": "={{$json.vanity_name}}"
+            },
+            {
+              "name": "q",
+              "value": "vanityName"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer [YOUR_LINKEDIN_TOKEN]"
+            },
+            {
+              "name": "LinkedIn-Version",
+              "value": "202507"
+            },
+            {
+              "name": "X-Restli-Protocol-Version",
+              "value": "2.0.0"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "5a50ecbe-8985-499b-b338-3d790efc4f64",
+      "name": "LinkedIn Get Organization ID",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        496,
+        32
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000,
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const response = $json;\nconst extracted = $node['Extract Vanity Name'].json;\n\nlet status = 'success';\nlet linkedinId = null;\nlet linkedinVanityName = null;\nlet linkedinCompanyPage = null;\nlet adsLibraryUrl = null;\nlet errorMessage = null;\n\nif (response.error || (response.statusCode && response.statusCode >= 400)) {\n  status = `linkedin_error_${response.statusCode || 'unknown'}`;\n  errorMessage = response.message || response.error || JSON.stringify(response);\n} else {\n  const elements = response.elements || [];\n  if (!elements.length) {\n    status = 'not_found';\n    errorMessage = 'No LinkedIn organization found for vanity name';\n  } else {\n    const org = elements[0];\n    linkedinId = org.id || null;\n    linkedinVanityName = org.vanityName || extracted.vanity_name;\n    linkedinCompanyPage = linkedinVanityName\n      ? `https://www.linkedin.com/company/${linkedinVanityName}/`\n      : extracted.lemlistprofileurl;\n    if (linkedinId) {\n      adsLibraryUrl = `https://www.linkedin.com/ad-library/search?companyIds=${linkedinId}`;\n    } else {\n      status = 'missing_id';\n      errorMessage = 'LinkedIn response did not contain organization ID';\n    }\n  }\n}\n\nconst sd = $getWorkflowStaticData('global');\nconst now = new Date().toISOString();\n\nconst properties = {\n  linkedin_ads_library_sync_status: status,\n  linkedin_ads_library_sync_month:  sd.current_month || now.slice(0, 7),\n  linkedin_ads_library_last_checked: now\n};\nif (linkedinId)   properties.linkedin_company_id      = String(linkedinId);\nif (adsLibraryUrl) properties.linkedin_ads_library_url = adsLibraryUrl;\n\nreturn {\n  json: {\n    ...extracted,\n    retrieved_linkedin_id:      linkedinId,\n    retrieved_vanity_name:      linkedinVanityName,\n    normalized_lemlistprofileurl: linkedinCompanyPage,\n    new_linkedin_ads_library_url: adsLibraryUrl,\n    linkedin_sync_status:       status,\n    linkedin_sync_error:        errorMessage,\n    linkedin_last_checked:      now,\n    linkedin_sync_month:        properties.linkedin_ads_library_sync_month,\n    update_payload:              { properties }\n  }\n};"
+      },
+      "id": "31fc83e4-f322-4d85-9888-1c9e8796a42f",
+      "name": "Parse LinkedIn Result",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        704,
+        32
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const sd = $getWorkflowStaticData('global');\nconst now = new Date().toISOString();\nconst input = $json;\n\nconst properties = {\n  linkedin_ads_library_sync_status: 'no_vanity',\n  linkedin_ads_library_sync_month:  sd.current_month || now.slice(0, 7),\n  linkedin_ads_library_last_checked: now\n};\n\nreturn {\n  json: {\n    ...input,\n    linkedin_sync_status: 'no_vanity',\n    linkedin_last_checked: now,\n    update_payload: { properties }\n  }\n};"
+      },
+      "id": "e18efe38-82c4-4e48-9632-3e23dd123406",
+      "name": "Build No-Vanity Payload",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        512,
+        256
+      ]
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "=https://api.hubapi.com/crm/v3/objects/companies/{{$json.hubspot_company_id}}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer [YOUR_HUBSPOT_TOKEN]"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.update_payload) }}",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "1830b310-e458-41d9-99de-037c35f8f0a0",
+      "name": "HubSpot Update Company",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        928,
+        192
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000,
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "amount": 0.2
+      },
+      "id": "72e00e7e-0657-4232-91f5-64abbe26dcda",
+      "name": "LinkedIn Rate Safety Wait",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        1312,
+        272
+      ],
+      "webhookId": "linkedin-rate-safety-wait"
+    },
+    {
+      "parameters": {
+        "jsCode": "const TOKEN = '[YOUR_HUBSPOT_TOKEN]';\nconst sd = $getWorkflowStaticData('global');\nconst DAILY_LIMIT    = sd.daily_limit || 3000;\nconst CURRENT_MONTH = sd.current_month;\nconst BATCH_SIZE    = 100;\n\nconst allCompanies = [];\nlet cursor = '';\n\nwhile (allCompanies.length < DAILY_LIMIT) {\n  const body = {\n    limit: BATCH_SIZE,\n    sorts: [{ propertyName: 'hs_object_id', direction: 'ASCENDING' }],\n    properties: [\n      'lemlistprofileurl',\n      'linkedin_company_id',\n      'linkedin_ads_library_url',\n      'linkedin_ads_library_last_checked',\n      'linkedin_ads_library_sync_status',\n      'linkedin_ads_library_sync_month'\n    ],\n    filterGroups: [\n      {\n        filters: [\n          { propertyName: 'lemlistprofileurl', operator: 'HAS_PROPERTY' },\n          { propertyName: 'linkedin_ads_library_sync_month', operator: 'NOT_HAS_PROPERTY' }\n        ]\n      },\n      {\n        filters: [\n          { propertyName: 'lemlistprofileurl', operator: 'HAS_PROPERTY' },\n          { propertyName: 'linkedin_ads_library_sync_month', operator: 'NEQ', value: CURRENT_MONTH }\n        ]\n      }\n    ]\n  };\n\n  if (cursor) body.after = cursor;\n\n  const response = await this.helpers.httpRequest({\n    method: 'POST',\n    url: 'https://api.hubapi.com/crm/v3/objects/companies/search',\n    headers: {\n      'Authorization': `Bearer ${TOKEN}`,\n      'Content-Type': 'application/json'\n    },\n    body: body,\n    json: true\n  });\n\n  const results    = response.results || [];\n  const nextCursor = response.paging?.next?.after || '';\n\n  const remaining = DAILY_LIMIT - allCompanies.length;\n  const toAdd     = results.slice(0, remaining);\n\n  for (const company of toAdd) {\n    const p = company.properties || {};\n    allCompanies.push({\n      json: {\n        hubspot_company_id:           company.id,\n        lemlistprofileurl:         p.lemlistprofileurl || null,\n        existing_linkedin_company_id: p.linkedin_company_id || null,\n        existing_ads_library_url:      p.linkedin_ads_library_url || null,\n        current_month:                CURRENT_MONTH\n      }\n    });\n  }\n\n  if (!nextCursor || results.length === 0) break;\n  cursor = nextCursor;\n}\n\nreturn allCompanies;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -432,
+        80
+      ],
+      "id": "b6b50b51-9fcb-44dc-b45a-a075809089ad",
+      "name": "Fetch All Companies"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 1,3,6,8,11,13,16,18,21,23 * * *"
+            }
+          ]
+        }
+      },
+      "id": "4351cfa2-d6b7-4750-bd0c-c5f97acff1c9",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -832,
+        80
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Initialize Daily Run": {
+      "main": [
+        [
+          {
+            "node": "Fetch All Companies",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Inner Loop (per company)": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Extract Vanity Name",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Vanity Name": {
+      "main": [
+        [
+          {
+            "node": "IF Has Vanity Name?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF Has Vanity Name?": {
+      "main": [
+        [
+          {
+            "node": "LinkedIn Get Organization ID",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Build No-Vanity Payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "LinkedIn Get Organization ID": {
+      "main": [
+        [
+          {
+            "node": "Parse LinkedIn Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse LinkedIn Result": {
+      "main": [
+        [
+          {
+            "node": "HubSpot Update Company",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build No-Vanity Payload": {
+      "main": [
+        [
+          {
+            "node": "HubSpot Update Company",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HubSpot Update Company": {
+      "main": [
+        [
+          {
+            "node": "LinkedIn Rate Safety Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "LinkedIn Rate Safety Wait": {
+      "main": [
+        [
+          {
+            "node": "Inner Loop (per company)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch All Companies": {
+      "main": [
+        [
+          {
+            "node": "Inner Loop (per company)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Initialize Daily Run",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "timeSavedMode": "fixed",
+    "errorWorkflow": "Vva7QTDJAUyKJWX0",
+    "callerPolicy": "workflowsFromSameOwner"
+  }
+}
