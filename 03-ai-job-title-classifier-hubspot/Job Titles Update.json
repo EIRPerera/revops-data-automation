@@ -12,7 +12,7 @@
         },
         "documentId": {
           "__rl": true,
-          "value": "1UQOdcgbBQDKCLsLOUt0E_rWNTMeEQ7oGd9_WNFwBOLo",
+          "value": "[YOUR_GOOGLE_SHEET_ID]",
           "mode": "list",
           "cachedResultName": "Job Titles Update"
         },
@@ -36,7 +36,7 @@
       "parameters": {
         "documentId": {
           "__rl": true,
-          "value": "1UQOdcgbBQDKCLsLOUt0E_rWNTMeEQ7oGd9_WNFwBOLo",
+          "value": "[YOUR_GOOGLE_SHEET_ID]",
           "mode": "list",
           "cachedResultName": "Job Titles Update"
         },
@@ -69,7 +69,7 @@
         "operation": "append",
         "documentId": {
           "__rl": true,
-          "value": "1UQOdcgbBQDKCLsLOUt0E_rWNTMeEQ7oGd9_WNFwBOLo",
+          "value": "[YOUR_GOOGLE_SHEET_ID]",
           "mode": "list",
           "cachedResultName": "Job Titles Update"
         },
@@ -100,7 +100,7 @@
         "operation": "clear",
         "documentId": {
           "__rl": true,
-          "value": "1UQOdcgbBQDKCLsLOUt0E_rWNTMeEQ7oGd9_WNFwBOLo",
+          "value": "[YOUR_GOOGLE_SHEET_ID]",
           "mode": "list",
           "cachedResultName": "Job Titles Update"
         },
