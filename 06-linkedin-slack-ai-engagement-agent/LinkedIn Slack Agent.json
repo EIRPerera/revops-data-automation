@@ -8,7 +8,7 @@
         ],
         "channelId": {
           "__rl": true,
-          "value": "C0AL94PKY4A",
+          "value": "[YOUR_SLACK_ID]",
           "mode": "list",
           "cachedResultName": "test-linkedin-monitoring"
         },
@@ -94,8 +94,8 @@
       "parameters": {
         "authentication": "nocoDbApiToken",
         "operation": "getAll",
-        "projectId": "pwmsw3rd0ysflhr",
-        "table": "m67l7x7df6fs5lx",
+        "projectId": "[YOUR_PROJECT_ID]",
+        "table": "[YOUR_TABLE_ID]",
         "returnAll": true,
         "options": {}
       },
@@ -151,8 +151,8 @@
       "parameters": {
         "authentication": "nocoDbApiToken",
         "operation": "getAll",
-        "projectId": "pwmsw3rd0ysflhr",
-        "table": "m4ua2mw48ow384i",
+        "projectId": "[YOUR_PROJECT_ID]",
+        "table": "[YOUR_TABLE_ID]",
         "returnAll": true,
         "options": {}
       },
@@ -175,8 +175,8 @@
       "parameters": {
         "authentication": "nocoDbApiToken",
         "operation": "getAll",
-        "projectId": "pwmsw3rd0ysflhr",
-        "table": "mj6x46sliq7f7rx",
+        "projectId": "[YOUR_PROJECT_ID]",
+        "table": "[YOUR_TABLE_ID]",
         "returnAll": true,
         "options": {}
       },
