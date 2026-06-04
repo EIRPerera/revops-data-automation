@@ -18,7 +18,7 @@
     },
     {
       "parameters": {
-        "url": "https://[YOUR_NOCODB_URL]/api/v1/db/data/noco/pwmsw3rd0ysflhr/mx4zpx5ndoph5l0",
+        "url": "https://[YOUR_NOCODB_URL]/api/v1/db/data/noco/[NocoDB_Project]/[Table ID]",
         "sendQuery": true,
         "queryParameters": {
           "parameters": [
